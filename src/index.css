@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 20% 97%;
+    --foreground: 22 48% 15%;
+
+    --card: 33 30% 96%;
+    --card-foreground: 22 48% 15%;
+
+    --popover: 30 20% 97%;
+    --popover-foreground: 22 48% 15%;
+
+    --primary: 22 48% 29%;
+    --primary-foreground: 33 42% 95%;
+
+    --secondary: 33 42% 64%;
+    --secondary-foreground: 22 48% 15%;
+
+    --muted: 33 20% 90%;
+    --muted-foreground: 44 12% 40%;
+
+    --accent: 33 50% 53%;
+    --accent-foreground: 30 20% 97%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 33 20% 85%;
+    --input: 33 20% 88%;
+    --ring: 33 50% 53%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 22 48% 12%;
+    --sidebar-foreground: 33 30% 90%;
+    --sidebar-primary: 33 50% 53%;
+    --sidebar-primary-foreground: 30 20% 97%;
+    --sidebar-accent: 22 40% 20%;
+    --sidebar-accent-foreground: 33 42% 80%;
+    --sidebar-border: 22 30% 22%;
+    --sidebar-ring: 33 50% 53%;
+
+    /* Custom tokens */
+    --gold: 33 50% 53%;
+    --gold-foreground: 30 20% 97%;
+    --rose: 19 33% 65%;
+    --olive: 44 12% 48%;
+    --glass: 33 30% 96% / 0.7;
+    --glass-border: 33 20% 85% / 0.5;
+    --gradient-warm: linear-gradient(135deg, hsl(22, 48%, 29%), hsl(33, 50%, 53%));
+    --gradient-gold: linear-gradient(135deg, hsl(33, 50%, 53%), hsl(33, 42%, 64%));
+    --gradient-soft: linear-gradient(135deg, hsl(30, 20%, 97%), hsl(33, 30%, 96%));
+    --shadow-soft: 0 4px 24px -4px hsl(22, 48%, 29% / 0.08);
+    --shadow-card: 0 8px 32px -8px hsl(22, 48%, 29% / 0.12);
+    --shadow-glow: 0 0 40px -10px hsl(33, 50%, 53% / 0.3);
+  }
+
+  .dark {
+    --background: 22 40% 8%;
+    --foreground: 33 30% 92%;
+
+    --card: 22 35% 12%;
+    --card-foreground: 33 30% 92%;
+
+    --popover: 22 35% 12%;
+    --popover-foreground: 33 30% 92%;
+
+    --primary: 33 50% 53%;
+    --primary-foreground: 22 48% 10%;
+
+    --secondary: 22 30% 20%;
+    --secondary-foreground: 33 42% 80%;
+
+    --muted: 22 25% 18%;
+    --muted-foreground: 33 15% 55%;
+
+    --accent: 33 50% 53%;
+    --accent-foreground: 22 48% 10%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 22 25% 20%;
+    --input: 22 25% 20%;
+    --ring: 33 50% 53%;
+
+    --sidebar-background: 22 48% 6%;
+    --sidebar-foreground: 33 30% 85%;
+    --sidebar-primary: 33 50% 53%;
+    --sidebar-primary-foreground: 22 48% 10%;
+    --sidebar-accent: 22 35% 14%;
+    --sidebar-accent-foreground: 33 42% 75%;
+    --sidebar-border: 22 30% 15%;
+    --sidebar-ring: 33 50% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-xl border border-border/50 rounded-2xl;
+    box-shadow: var(--shadow-card);
+  }
+
+  .glass-panel {
+    @apply bg-card/50 backdrop-blur-lg border border-border/30 rounded-2xl;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .gradient-warm {
+    background: var(--gradient-warm);
+  }
+
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .gradient-soft {
+    background: var(--gradient-soft);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+}
