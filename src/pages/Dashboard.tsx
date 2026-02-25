@@ -58,9 +58,12 @@ const Dashboard = () => {
     });
   }, []);
 
-  const totalBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+  // Calculate income and expenses
   const income = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const expenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  
+  // Calculate total balance as income - expenses
+  const totalBalance = income - expenses;
 
   // Group expenses by category for pie chart
   const categoryMap: Record<string, number> = {};
@@ -83,12 +86,11 @@ const Dashboard = () => {
   )));
 
   const stats = [
-    { label: "Total Balance", value: totalBalance.toLocaleString(), icon: Wallet, trend: "up" as const },
+    { label: "Total Balance", value: totalBalance.toLocaleString(), icon: Wallet, trend: totalBalance >= 0 ? "up" as const : "down" as const },
     { label: "Income", value: income.toLocaleString(), icon: TrendingUp, trend: "up" as const },
     { label: "Expenses", value: expenses.toLocaleString(), icon: TrendingDown, trend: "down" as const },
     { label: "Active Goals", value: goals.length.toString(), icon: Target, trend: "up" as const },
   ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">

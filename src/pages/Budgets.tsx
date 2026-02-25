@@ -15,7 +15,8 @@ import {
   Film, Briefcase, Code, PiggyBank, MoreHorizontal,
   Moon, Sun, Download, Upload, Repeat, ArrowLeftRight,
   LineChart, Settings, Share2, Star, Flag,
-  Smile, Frown, Meh, ThumbsUp, ThumbsDown
+  Smile, Frown, Meh, ThumbsUp, ThumbsDown, Search, X,
+  Filter, RefreshCw, ChevronLeft, ChevronRight, SlidersHorizontal
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -48,7 +49,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Enhanced Color Palette
+// Enhanced Color Palette (keep existing)
 const COLORS = {
   primary: {
     dark: "#1A1F2C",
@@ -76,8 +77,7 @@ const COLORS = {
   }
 };
 
-// Categories with enhanced metadata
-// Categories with enhanced metadata
+// Categories with enhanced metadata (keep existing CATEGORIES array)
 const CATEGORIES = [
   // Expense Categories (Essential)
   { 
@@ -392,25 +392,18 @@ const CATEGORIES = [
   }
 ];
 
-// Helper functions for filtering categories
+// Helper functions (keep existing)
 const getCategoriesByType = (type: 'income' | 'expense' | 'transfer' | 'both') => {
   return CATEGORIES.filter(c => c.type === type || c.type === 'both');
 };
 
-// Get expense categories (for budget allocation)
 const EXPENSE_CATEGORIES = CATEGORIES.filter(c => c.type === 'expense');
-
-// Get income categories (for income transactions)
 const INCOME_CATEGORIES = CATEGORIES.filter(c => c.type === 'income');
-
-// Get transfer categories (for savings/transfers)
 const TRANSFER_CATEGORIES = CATEGORIES.filter(c => c.type === 'transfer');
-
-// For backward compatibility
 const EXPENSE_ONLY_CATEGORIES = EXPENSE_CATEGORIES.map(c => c.name);
 const INCOME_ONLY_CATEGORIES = INCOME_CATEGORIES.map(c => c.name);
 
-// Types
+// Types (keep existing)
 interface Budget {
   id: string;
   category: string;
@@ -448,7 +441,6 @@ interface BudgetWithProgress extends Budget {
   dailyAverage: number;
   projectedSpend: number;
   healthScore: number;
-  // Add these properties to fix TypeScript errors
   icon?: React.ElementType;
   color?: string;
   description?: string;
@@ -497,7 +489,160 @@ interface PurchaseCheck {
     suggestedAmount: number;
   }>;
 }
+
+/////////////////////
+// Loading States
+/////////////////////
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center py-12">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: COLORS.primary.gold }}></div>
+  </div>
+);
+
+const SkeletonCard = () => (
+  <div className="bg-white rounded-xl border p-4 space-y-3">
+    <div className="flex items-center gap-3">
+      <Skeleton className="w-10 h-10 rounded-xl" />
+      <div className="flex-1">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-3 w-32 mt-1" />
+      </div>
+    </div>
+    <div className="grid grid-cols-3 gap-2">
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
+    </div>
+    <Skeleton className="h-2 w-full" />
+    <div className="flex gap-2">
+      <Skeleton className="h-8 flex-1" />
+      <Skeleton className="h-8 flex-1" />
+    </div>
+  </div>
+);
+
+/////////////////////
+// Error Display
+/////////////////////
+const ErrorDisplay = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <div className="text-center py-12 px-4">
+    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: `${COLORS.accent.danger}20` }}>
+      <AlertCircle className="w-8 h-8" style={{ color: COLORS.accent.danger }} />
+    </div>
+    <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.primary.dark }}>Failed to load budget data</h3>
+    <p className="mb-4" style={{ color: COLORS.primary.olive }}>{message}</p>
+    <Button 
+      onClick={onRetry}
+      style={{ backgroundColor: COLORS.primary.gold }}
+      className="hover:opacity-90 text-white"
+    >
+      <RefreshCw className="w-4 h-4 mr-2" />
+      Try Again
+    </Button>
+  </div>
+);
+
+/////////////////////
+// Empty State
+/////////////////////
+const EmptyState = ({ onAdd }: { onAdd: () => void }) => (
+  <div className="text-center py-12 px-4">
+    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: `${COLORS.primary.beige}30` }}>
+      <PieChart className="w-8 h-8" style={{ color: COLORS.primary.brown }} />
+    </div>
+    <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.primary.dark }}>No budgets created yet</h3>
+    <p className="mb-4" style={{ color: COLORS.primary.olive }}>Create your first budget to start tracking your spending</p>
+    <Button 
+      onClick={onAdd}
+      style={{ backgroundColor: COLORS.primary.gold }}
+      className="hover:opacity-90 text-white"
+    >
+      <Plus className="w-4 h-4 mr-2" />
+      Create Budget
+    </Button>
+  </div>
+);
+
+/////////////////////
+// Category Totals Component
+/////////////////////
+interface CategoryTotalsProps {
+  budgets: BudgetWithProgress[];
+  monthlyIncome: number;
+  type: 'all' | 'essential' | 'discretionary';
+}
+
+const CategoryTotals = ({ budgets, monthlyIncome, type }: CategoryTotalsProps) => {
+  const filteredBudgets = budgets.filter(b => {
+    const category = CATEGORIES.find(c => c.name === b.category);
+    if (type === 'essential') return category?.essential === true;
+    if (type === 'discretionary') return category?.essential === false;
+    return true;
+  });
+
+  const totalBudgeted = filteredBudgets.reduce((sum, b) => sum + b.budgetedAmount, 0);
+  const totalSpent = filteredBudgets.reduce((sum, b) => sum + b.spent, 0);
+  const totalRemaining = totalBudgeted - totalSpent;
+  const avgHealthScore = filteredBudgets.length > 0 
+    ? filteredBudgets.reduce((sum, b) => sum + b.healthScore, 0) / filteredBudgets.length 
+    : 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          {type === 'essential' && <Shield className="w-4 h-4 text-blue-500" />}
+          {type === 'discretionary' && <Sparkles className="w-4 h-4 text-purple-500" />}
+          {type === 'all' && <PieChart className="w-4 h-4 text-green-500" />}
+          {type === 'essential' ? 'Essential Expenses' : 
+           type === 'discretionary' ? 'Discretionary Spending' : 
+           'All Categories'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500">Budgeted</p>
+              <p className="text-lg font-bold">{totalBudgeted.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">
+                {((totalBudgeted / monthlyIncome) * 100).toFixed(1)}% of income
+              </p>
+            </div>
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500">Spent</p>
+              <p className="text-lg font-bold text-orange-600">{totalSpent.toLocaleString()}</p>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Remaining</span>
+            <span className={`font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {Math.abs(totalRemaining).toLocaleString()}
+              {totalRemaining < 0 && ' overspent'}
+            </span>
+          </div>
+          
+          <Progress 
+            value={(totalSpent / totalBudgeted) * 100} 
+            className={`h-2 ${totalSpent > totalBudgeted ? 'bg-red-200' : 'bg-green-200'}`}
+          />
+          
+          <div className="flex justify-between text-xs text-gray-500 pt-2 border-t">
+            <span>{filteredBudgets.length} categories</span>
+            <span>Health: {avgHealthScore.toFixed(0)}%</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// [Keep all the existing imports, COLORS, CATEGORIES, types, LoadingSpinner, SkeletonCard, ErrorDisplay, EmptyState, CategoryTotals as above]
+
+/////////////////////
 // AI Assistant Component
+/////////////////////
 const AIAssistant = ({ 
   insights, 
   onAction,
@@ -592,7 +737,7 @@ const AIAssistant = ({
                 {currentInsight.impact && (
                   <div className="mt-2 flex items-center gap-2">
                     <Badge variant="outline" className="bg-white">
-                      Impact: ${currentInsight.impact.toFixed(2)}
+                      Impact: {currentInsight.impact.toFixed(2)}
                     </Badge>
                   </div>
                 )}
@@ -650,7 +795,9 @@ const AIAssistant = ({
   );
 };
 
+/////////////////////
 // Smart Budget Card Component
+/////////////////////
 const SmartBudgetCard = ({ 
   budget, 
   onAdjust,
@@ -728,16 +875,16 @@ const SmartBudgetCard = ({
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="text-center">
             <p className="text-xs text-gray-500">Budgeted</p>
-            <p className="font-bold">${budget.budgetedAmount.toLocaleString()}</p>
+            <p className="font-bold">{budget.budgetedAmount.toLocaleString()}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500">Spent</p>
-            <p className="font-bold text-orange-600">${budget.spent.toLocaleString()}</p>
+            <p className="font-bold text-orange-600">{budget.spent.toLocaleString()}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500">Left</p>
             <p className={`font-bold ${budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${Math.abs(budget.remaining).toLocaleString()}
+              {Math.abs(budget.remaining).toLocaleString()}
             </p>
           </div>
         </div>
@@ -747,7 +894,7 @@ const SmartBudgetCard = ({
           <div className="flex justify-between text-xs">
             <span className="text-gray-500">{budget.percentageUsed.toFixed(1)}% used</span>
             <span className="text-gray-500">
-              {budget.dailyAverage > 0 ? `$${budget.dailyAverage.toFixed(2)}/day` : 'No spending'}
+              {budget.dailyAverage > 0 ? `${budget.dailyAverage.toFixed(2)}/day` : 'No spending'}
             </span>
           </div>
           <Progress 
@@ -767,7 +914,7 @@ const SmartBudgetCard = ({
             <div className="flex justify-between">
               <span className="text-gray-600">Projected by month end:</span>
               <span className={budget.projectedSpend > budget.budgetedAmount ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
-                ${budget.projectedSpend.toLocaleString()}
+                {budget.projectedSpend.toLocaleString()}
                 {budget.projectedSpend > budget.budgetedAmount && ' ⚠️'}
               </span>
             </div>
@@ -781,7 +928,7 @@ const SmartBudgetCard = ({
             {budget.transactions.slice(0, 2).map(tx => (
               <div key={tx.id} className="flex justify-between text-xs">
                 <span className="truncate max-w-[150px]">{tx.description || tx.category}</span>
-                <span className="font-medium">${tx.amount.toLocaleString()}</span>
+                <span className="font-medium">{tx.amount.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -810,30 +957,25 @@ const SmartBudgetCard = ({
           </>
         ) : (
           <div className="flex-1 flex gap-2">
-         <Slider 
-  value={[tempPercentage]} 
-  onValueChange={([v]) => {
-    console.log('Slider value changed:', v, typeof v);
-    setTempPercentage(v); // v should be a number
-  }}
-  min={0}
-  max={100}
-  step={0.5}
-  className="flex-1"
-/>
-
-
-<Button 
-  size="sm" 
-  onClick={() => {
-    console.log('Save clicked with tempPercentage:', tempPercentage, typeof tempPercentage);
-    // Ensure we're passing a number
-    onAdjust(budget.id, Number(tempPercentage));
-    setShowAdjust(false);
-  }}
->
-  Save
-</Button>
+            <Slider 
+              value={[tempPercentage]} 
+              onValueChange={([v]) => {
+                setTempPercentage(v);
+              }}
+              min={0}
+              max={100}
+              step={0.5}
+              className="flex-1"
+            />
+            <Button 
+              size="sm" 
+              onClick={() => {
+                onAdjust(budget.id, tempPercentage);
+                setShowAdjust(false);
+              }}
+            >
+              Save
+            </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdjust(false)}>
               Cancel
             </Button>
@@ -844,8 +986,9 @@ const SmartBudgetCard = ({
   );
 };
 
+/////////////////////
 // Purchase Checker Component
-// Purchase Checker Component - Simplified version
+/////////////////////
 const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -861,7 +1004,7 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
     try {
       console.log('Checking purchase amount:', Number(amount));
       
-      const res = await onCheck({ amount: Number(amount) }); // Only send amount
+      const res = await onCheck({ amount: Number(amount) });
       
       console.log('Purchase check response:', res);
       setResult(res);
@@ -881,7 +1024,6 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
     }
   };
 
-  // Calculate percentage of disposable income
   const getPercentageOfIncome = () => {
     if (!result || !result.disposableIncome) return null;
     return ((Number(amount) / result.disposableIncome) * 100).toFixed(1);
@@ -956,7 +1098,7 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
                             Disposable Income
                           </p>
                           <p className="text-xl font-bold text-gray-900">
-                            ${result.disposableIncome.toLocaleString()}
+                            {result.disposableIncome.toLocaleString()}
                           </p>
                         </div>
                       )}
@@ -1024,7 +1166,7 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
                                       <div className="col-span-2">
                                         <span className="text-gray-500">Suggested monthly amount:</span>
                                         <span className="ml-1 font-medium">
-                                          ${suggestion.suggestedAmount.toLocaleString()}
+                                          {suggestion.suggestedAmount.toLocaleString()}
                                         </span>
                                       </div>
                                     )}
@@ -1043,7 +1185,7 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
               {/* Quick tip */}
               <div className="mt-3 text-xs text-gray-500 flex items-center gap-1 justify-center">
                 <Sparkles className="w-3 h-3" />
-                <span>Based on your monthly disposable income of ${result.disposableIncome?.toLocaleString()}</span>
+                <span>Based on your monthly disposable income of {result.disposableIncome?.toLocaleString()}</span>
               </div>
             </motion.div>
           )}
@@ -1058,8 +1200,10 @@ const Budgets = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ category: "Rent", percentage: "" });
+  const [formErrors, setFormErrors] = useState<{ category?: string; percentage?: string }>({});
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [monthlySummary, setMonthlySummary] = useState<MonthlySummary | null>(null);
   const [insights, setInsights] = useState<AIInsight[]>([]);
@@ -1068,15 +1212,26 @@ const Budgets = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showPurchaseChecker, setShowPurchaseChecker] = useState(false);
   
+  // New state for search, filters, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'on_track' | 'warning' | 'exceeded' | 'under_utilized'>('all');
+  const [essentialFilter, setEssentialFilter] = useState<'all' | 'essential' | 'discretionary'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'health' | 'spent' | 'remaining'>('health');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [showFilters, setShowFilters] = useState(false);
+
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // Load data
+  // Load data with error handling
   const loadData = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const [budgetsData, transactionsData, accountsData] = await Promise.all([
         budgetsApi.getAll(),
         transactionsApi.getAll(),
@@ -1089,15 +1244,41 @@ const Budgets = () => {
 
       calculateMonthlyData(transactionsData, accountsData);
       generateInsights(budgetsData, transactionsData, accountsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading data:", error);
+      setError(error.message || "Failed to load budget data");
       toast.error("Failed to load budget data");
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate monthly data
+  // Validate form
+  const validateForm = () => {
+    const errors: typeof formErrors = {};
+    
+    if (!form.category) {
+      errors.category = "Please select a category";
+    }
+    
+    if (!form.percentage) {
+      errors.percentage = "Percentage is required";
+    } else {
+      const pct = Number(form.percentage);
+      if (isNaN(pct)) {
+        errors.percentage = "Please enter a valid number";
+      } else if (pct <= 0) {
+        errors.percentage = "Percentage must be greater than 0";
+      } else if (pct > 100) {
+        errors.percentage = "Percentage cannot exceed 100%";
+      }
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Calculate monthly data (keep existing)
   const calculateMonthlyData = (
     allTransactions: Transaction[],
     allAccounts: Account[]
@@ -1121,7 +1302,6 @@ const Budgets = () => {
       .filter(t => t.type === 'transfer')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Get starting balance
     const previousMonthDate = new Date(year, month - 2);
     const previousMonthTransactions = allTransactions.filter(t => {
       const date = new Date(t.transactionDate);
@@ -1154,7 +1334,7 @@ const Budgets = () => {
     });
   };
 
-  // Generate AI insights
+  // Generate AI insights (keep existing)
   const generateInsights = async (
     budgets: Budget[],
     transactions: Transaction[],
@@ -1168,7 +1348,6 @@ const Budgets = () => {
       return date.getMonth() + 1 === month && date.getFullYear() === year;
     });
 
-    // Calculate category spending
     const categorySpending = new Map<string, number>();
     monthTransactions
       .filter(t => t.type === 'expense')
@@ -1177,7 +1356,6 @@ const Budgets = () => {
         categorySpending.set(t.category, current + t.amount);
       });
 
-    // Check for overspending
     budgets.forEach(budget => {
       const spent = categorySpending.get(budget.category) || 0;
       const budgetedAmount = (budget.percentage / 100) * monthlyIncome;
@@ -1188,13 +1366,12 @@ const Budgets = () => {
           id: `overspend-${budget.category}-${Date.now()}`,
           type: 'warning',
           title: `Overspent in ${budget.category}`,
-          description: `You've exceeded your ${budget.category} budget by $${(spent - budgetedAmount).toFixed(2)}.`,
+          description: `You've exceeded your ${budget.category} budget by ${(spent - budgetedAmount).toFixed(2)}.`,
           impact: spent - budgetedAmount,
           category: budget.category,
           priority: 'high',
           timestamp: new Date(),
           read: false,
-        
         });
       } else if (percentageUsed > 85) {
         newInsights.push({
@@ -1232,7 +1409,6 @@ const Budgets = () => {
       }
     });
 
-    // Check savings rate
     if (monthlySummary) {
       if (monthlySummary.savingsRate < 10) {
         newInsights.push({
@@ -1264,7 +1440,6 @@ const Budgets = () => {
       }
     }
 
-    // Check for unusual spending patterns
     const daysInMonth = new Date(year, month, 0).getDate();
     const dailyAverage = monthTransactions
       .filter(t => t.type === 'expense')
@@ -1284,7 +1459,7 @@ const Budgets = () => {
         id: `unusual-spending-${Date.now()}`,
         type: 'alert',
         title: 'Unusual spending detected',
-        description: `You spent $${yesterdaySpending.toFixed(2)} yesterday, which is ${((yesterdaySpending / dailyAverage) * 100).toFixed(0)}% above your daily average.`,
+        description: `You spent ${yesterdaySpending.toFixed(2)} yesterday, which is ${((yesterdaySpending / dailyAverage) * 100).toFixed(0)}% above your daily average.`,
         impact: yesterdaySpending - dailyAverage,
         priority: 'medium',
         timestamp: new Date(),
@@ -1292,7 +1467,6 @@ const Budgets = () => {
       });
     }
 
-    // Sort by priority
     newInsights.sort((a, b) => {
       const priorityWeight = { high: 3, medium: 2, low: 1 };
       return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
@@ -1301,7 +1475,7 @@ const Budgets = () => {
     setInsights(newInsights);
   };
 
-  // Calculate budget progress
+  // Calculate budget progress (keep existing)
   const calculateBudgetProgress = (): BudgetWithProgress[] => {
     const [year, month] = selectedMonth.split('-').map(Number);
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -1337,7 +1511,6 @@ const Budgets = () => {
       const dailyAverage = currentDay > 0 ? spent / currentDay : 0;
       const projectedSpend = dailyAverage * daysInMonth;
       
-      // Calculate health score
       let healthScore = 100;
       if (percentageUsed > 100) healthScore = 50 - (percentageUsed - 100);
       else if (percentageUsed > 85) healthScore = 70 - (percentageUsed - 85) * 2;
@@ -1346,7 +1519,6 @@ const Budgets = () => {
       
       healthScore = Math.max(0, Math.min(100, healthScore));
 
-      // Find category info
       const categoryInfo = CATEGORIES.find(c => c.name === budget.category) || CATEGORIES[CATEGORIES.length - 1];
 
       return {
@@ -1360,7 +1532,6 @@ const Budgets = () => {
         dailyAverage,
         projectedSpend,
         healthScore,
-        // Add these properties from categoryInfo
         icon: categoryInfo.icon,
         color: categoryInfo.color,
         description: categoryInfo.description || ''
@@ -1368,11 +1539,82 @@ const Budgets = () => {
     });
   };
 
+  // Filter and sort budgets
+  const budgetProgress = calculateBudgetProgress();
+  
+  const filteredAndSortedBudgets = useMemo(() => {
+    let filtered = [...budgetProgress];
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(b => 
+        b.category.toLowerCase().includes(term) ||
+        b.description?.toLowerCase().includes(term) ||
+        b.status.toLowerCase().includes(term)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(b => b.status === statusFilter);
+    }
+
+    // Essential/Discretionary filter
+    if (essentialFilter !== 'all') {
+      filtered = filtered.filter(b => {
+        const category = CATEGORIES.find(c => c.name === b.category);
+        if (essentialFilter === 'essential') return category?.essential === true;
+        if (essentialFilter === 'discretionary') return category?.essential === false;
+        return true;
+      });
+    }
+
+    // Sorting
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.category.localeCompare(b.category);
+          break;
+        case 'health':
+          comparison = a.healthScore - b.healthScore;
+          break;
+        case 'spent':
+          comparison = a.spent - b.spent;
+          break;
+        case 'remaining':
+          comparison = a.remaining - b.remaining;
+          break;
+        default:
+          comparison = 0;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [budgetProgress, searchTerm, statusFilter, essentialFilter, sortBy, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedBudgets.length / itemsPerPage);
+  const paginatedBudgets = filteredAndSortedBudgets.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, essentialFilter, sortBy]);
+
   const handleCreateBudget = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!validateForm()) {
+      return;
+    }
+
     try {
-      // Create budget data without recommended_percentage
       const budgetData = {
         category: form.category,
         percentage: Number(form.percentage)
@@ -1382,58 +1624,58 @@ const Budgets = () => {
       toast.success("Budget allocation added!");
       setShowForm(false);
       setForm({ category: "Rent", percentage: "" });
+      setFormErrors({});
       loadData();
     } catch (err: any) { 
       toast.error(err.message); 
     }
   };
 
-const handleAdjustBudget = async (id: string, newPercentage: any) => {
-  console.log('RAW INPUT:', { id, newPercentage, type: typeof newPercentage });
-  console.log('JSON stringified:', JSON.stringify(newPercentage));
-  
-  // If it's an object with percentage property, extract it
-  let percentageValue: number;
-  
-  if (typeof newPercentage === 'object' && newPercentage !== null) {
-    console.log('Received object:', newPercentage);
-    if ('percentage' in newPercentage) {
-      percentageValue = Number(newPercentage.percentage);
-      console.log('Extracted percentage from object:', percentageValue);
+  const handleAdjustBudget = async (id: string, newPercentage: any) => {
+    console.log('RAW INPUT:', { id, newPercentage, type: typeof newPercentage });
+    
+    let percentageValue: number;
+    
+    if (typeof newPercentage === 'object' && newPercentage !== null) {
+      console.log('Received object:', newPercentage);
+      if ('percentage' in newPercentage) {
+        percentageValue = Number(newPercentage.percentage);
+        console.log('Extracted percentage from object:', percentageValue);
+      } else {
+        toast.error("Invalid data format");
+        return;
+      }
     } else {
-      toast.error("Invalid data format");
-      return;
+      percentageValue = Number(newPercentage);
     }
-  } else {
-    percentageValue = Number(newPercentage);
-  }
-  
-  if (isNaN(percentageValue)) {
-    toast.error("Invalid percentage value");
-    return;
-  }
-  
-  try {
-    const existingBudget = budgets.find(b => b.id === id);
-    if (!existingBudget) {
-      toast.error("Budget not found");
+    
+    if (isNaN(percentageValue)) {
+      toast.error("Invalid percentage value");
       return;
     }
     
-    if (existingBudget.percentage === percentageValue) {
-      toast.info("Percentage unchanged");
-      return;
+    try {
+      const existingBudget = budgets.find(b => b.id === id);
+      if (!existingBudget) {
+        toast.error("Budget not found");
+        return;
+      }
+      
+      if (existingBudget.percentage === percentageValue) {
+        toast.info("Percentage unchanged");
+        return;
+      }
+      
+      await budgetsApi.update(id, percentageValue);
+      toast.success("Budget updated successfully!");
+      loadData();
+    } catch (err: any) {
+      console.error("Error adjusting budget:", err);
+      toast.error(err.message || "Failed to update budget");
+      loadData();
     }
-    
-    await budgetsApi.update(id, percentageValue);
-    toast.success("Budget updated successfully!");
-    loadData();
-  } catch (err: any) {
-    console.error("Error adjusting budget:", err);
-    toast.error(err.message || "Failed to update budget");
-    loadData();
-  }
-};
+  };
+
   const handleDeleteBudget = async (id: string) => {
     try {
       await budgetsApi.delete(id);
@@ -1444,21 +1686,20 @@ const handleAdjustBudget = async (id: string, newPercentage: any) => {
     }
   };
 
-const handlePurchaseCheck = async (data: { amount: number }) => {
-  try {
-    console.log('🔍 Checking purchase with amount:', data.amount);
-    const response = await budgetsApi.checkPurchase(data);
-    console.log('📥 Purchase check response:', response);
-    return response;
-  } catch (error) {
-    console.error('❌ Purchase check error:', error);
-    throw error;
-  }
-};
+  const handlePurchaseCheck = async (data: { amount: number }) => {
+    try {
+      console.log('🔍 Checking purchase with amount:', data.amount);
+      const response = await budgetsApi.checkPurchase(data);
+      console.log('📥 Purchase check response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Purchase check error:', error);
+      throw error;
+    }
+  };
 
   const handleInsightAction = (insight: AIInsight) => {
     toast.success(`Action: ${insight.action?.description}`);
-    // Mark as read
     setInsights(prev => prev.filter(i => i.id !== insight.id));
   };
 
@@ -1466,11 +1707,18 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
     setInsights(prev => prev.filter(i => i.id !== id));
   };
 
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setEssentialFilter('all');
+    setSortBy('health');
+    setSortOrder('desc');
+  };
+
   useEffect(() => {
     loadData();
   }, [selectedMonth]);
 
-  const budgetProgress = calculateBudgetProgress();
   const totalPct = budgets.reduce((s, b) => s + (b.percentage || 0), 0);
   
   const pieData = budgets.map((b) => ({ 
@@ -1490,17 +1738,27 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
 
   if (loading) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-12 w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-96" />
-          <div className="space-y-4">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-32" />)}
+      <div className={`min-h-screen p-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-gray-50 to-white'}`}>
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-96" />
+            <div className="space-y-4">
+              {[1,2,3,4].map(i => <Skeleton key={i} className="h-32" />)}
+            </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`min-h-screen p-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-gray-50 to-white'}`}>
+        <ErrorDisplay message={error} onRetry={loadData} />
       </div>
     );
   }
@@ -1508,7 +1766,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
   return (
     <div className={`min-h-screen p-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-gray-50 to-white'}`}>
       {/* Header with controls */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
             Smart Budget Dashboard
@@ -1518,7 +1776,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Month selector */}
           <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm border">
             <Calendar className="w-4 h-4 text-gray-500" />
@@ -1529,6 +1787,38 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
               className="border-0 focus:ring-0 text-sm"
             />
           </div>
+
+          {/* Search input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search budgets..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 w-[200px]"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter toggle */}
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className={showFilters ? 'bg-gray-100' : ''}
+          >
+            <SlidersHorizontal className="w-4 h-4 mr-2" />
+            Filters
+            {(statusFilter !== 'all' || essentialFilter !== 'all' || sortBy !== 'health') && (
+              <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full" />
+            )}
+          </Button>
 
           {/* View toggle */}
           <div className="flex bg-white rounded-xl border p-1">
@@ -1574,17 +1864,138 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
         </div>
       </div>
 
+      {/* Filters panel */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6 overflow-hidden"
+          >
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* Status filter */}
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs">Status</Label>
+                    <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="on_track">On Track</SelectItem>
+                        <SelectItem value="warning">Warning</SelectItem>
+                        <SelectItem value="exceeded">Exceeded</SelectItem>
+                        <SelectItem value="under_utilized">Under Utilized</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Essential filter */}
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs">Category Type</Label>
+                    <Select value={essentialFilter} onValueChange={(v: any) => setEssentialFilter(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="essential">Essential Only</SelectItem>
+                        <SelectItem value="discretionary">Discretionary Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Sort by */}
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs">Sort By</Label>
+                    <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Name</SelectItem>
+                        <SelectItem value="health">Health Score</SelectItem>
+                        <SelectItem value="spent">Amount Spent</SelectItem>
+                        <SelectItem value="remaining">Amount Remaining</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Sort order */}
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs">Order</Label>
+                    <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="desc">Descending</SelectItem>
+                        <SelectItem value="asc">Ascending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Items per page */}
+                  <div className="w-[100px]">
+                    <Label className="text-xs">Per Page</Label>
+                    <Select value={itemsPerPage.toString()} onValueChange={(v) => setItemsPerPage(Number(v))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="6">6</SelectItem>
+                        <SelectItem value="12">12</SelectItem>
+                        <SelectItem value="24">24</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Clear filters */}
+                  {(statusFilter !== 'all' || essentialFilter !== 'all' || sortBy !== 'health' || sortOrder !== 'desc' || searchTerm) && (
+                    <Button variant="ghost" onClick={clearFilters} className="mb-0.5">
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Category totals */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <CategoryTotals 
+          budgets={budgetProgress} 
+          monthlyIncome={monthlyIncome} 
+          type="all" 
+        />
+        <CategoryTotals 
+          budgets={budgetProgress} 
+          monthlyIncome={monthlyIncome} 
+          type="essential" 
+        />
+        <CategoryTotals 
+          budgets={budgetProgress} 
+          monthlyIncome={monthlyIncome} 
+          type="discretionary" 
+        />
+      </div>
+
       {/* Purchase checker */}
       <AnimatePresence>
-{showPurchaseChecker && (
-  <motion.div
-    initial={{ opacity: 0, y: -20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-  >
-    <PurchaseChecker onCheck={handlePurchaseCheck} />
-  </motion.div>
-)}
+        {showPurchaseChecker && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <PurchaseChecker onCheck={handlePurchaseCheck} />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Add budget form */}
@@ -1600,26 +2011,31 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Category</Label>
-            {/* In the add budget form */}
-<Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-  <SelectTrigger>
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    {EXPENSE_CATEGORIES.map((c) => {
-      const Icon = c.icon;
-      return (
-        <SelectItem key={c.id} value={c.name}>
-          <div className="flex items-center gap-2">
-            <Icon className="w-4 h-4" style={{ color: c.color }} />
-            {c.name}
-            {c.essential && <Badge variant="outline" className="text-xs ml-2">Essential</Badge>}
-          </div>
-        </SelectItem>
-      );
-    })}
-  </SelectContent>
-</Select>
+                <Select value={form.category} onValueChange={(v) => {
+                  setForm({ ...form, category: v });
+                  if (formErrors.category) setFormErrors({});
+                }}>
+                  <SelectTrigger style={{ borderColor: formErrors.category ? '#ef4444' : undefined }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPENSE_CATEGORIES.map((c) => {
+                      const Icon = c.icon;
+                      return (
+                        <SelectItem key={c.id} value={c.name}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" style={{ color: c.color }} />
+                            {c.name}
+                            {c.essential && <Badge variant="outline" className="text-xs ml-2">Essential</Badge>}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {formErrors.category && (
+                  <p className="text-xs text-red-500 mt-1">{formErrors.category}</p>
+                )}
               </div>
               
               <div>
@@ -1627,15 +2043,22 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                 <Input 
                   type="number" 
                   value={form.percentage} 
-                  onChange={(e) => setForm({ ...form, percentage: e.target.value })} 
+                  onChange={(e) => {
+                    setForm({ ...form, percentage: e.target.value });
+                    if (formErrors.percentage) setFormErrors({});
+                  }} 
                   required 
                   min="0"
                   max="100"
                   step="0.1"
+                  style={{ borderColor: formErrors.percentage ? '#ef4444' : undefined }}
                 />
-                {monthlyIncome > 0 && form.percentage && (
+                {formErrors.percentage && (
+                  <p className="text-xs text-red-500 mt-1">{formErrors.percentage}</p>
+                )}
+                {monthlyIncome > 0 && form.percentage && !formErrors.percentage && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Amount: ${((Number(form.percentage) / 100) * monthlyIncome).toLocaleString()}
+                    Amount: {((Number(form.percentage) / 100) * monthlyIncome).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -1644,7 +2067,10 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                 <Button type="submit" className="flex-1">
                   Save Budget
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="ghost" onClick={() => {
+                  setShowForm(false);
+                  setFormErrors({});
+                }}>
                   Cancel
                 </Button>
               </div>
@@ -1653,7 +2079,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
         )}
       </AnimatePresence>
 
-      {/* Summary Cards */}
+      {/* Summary Cards (keep existing) */}
       {monthlySummary && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-green-50 to-white border-green-200">
@@ -1662,7 +2088,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                 <div>
                   <p className="text-sm text-green-600 font-medium">Monthly Income</p>
                   <p className="text-2xl font-bold text-green-700">
-                    +${monthlySummary.totalIncome.toLocaleString()}
+                    +{monthlySummary.totalIncome.toLocaleString()}
                   </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
@@ -1676,7 +2102,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                 <div>
                   <p className="text-sm text-red-600 font-medium">Monthly Expenses</p>
                   <p className="text-2xl font-bold text-red-700">
-                    -${monthlySummary.totalExpenses.toLocaleString()}
+                    -{monthlySummary.totalExpenses.toLocaleString()}
                   </p>
                 </div>
                 <TrendingDown className="w-8 h-8 text-red-500 opacity-50" />
@@ -1692,7 +2118,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                 <div>
                   <p className="text-sm text-blue-600 font-medium">Net Cashflow</p>
                   <p className={`text-2xl font-bold ${monthlySummary.netCashflow >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
-                    ${monthlySummary.netCashflow.toLocaleString()}
+                    {monthlySummary.netCashflow.toLocaleString()}
                   </p>
                 </div>
                 <Wallet className="w-8 h-8 text-blue-500 opacity-50" />
@@ -1720,110 +2146,207 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
         </div>
       )}
 
+      {/* Results count */}
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-sm text-gray-500">
+          Showing {paginatedBudgets.length} of {filteredAndSortedBudgets.length} budgets
+        </p>
+      </div>
+
       {/* Main content tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsTrigger value="insights">Insights ({insights.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          {/* Budget progress cards */}
-          {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {budgetProgress.map((budget, i) => (
-                <SmartBudgetCard
-                  key={budget.id}
-                  budget={budget}
-                  onAdjust={handleAdjustBudget}
-                  onViewDetails={setSelectedBudget}
-                />
-              ))}
-            </div>
+          {filteredAndSortedBudgets.length === 0 ? (
+            <EmptyState onAdd={() => setShowForm(true)} />
+          ) : viewMode === 'grid' ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedBudgets.map((budget) => (
+                  <SmartBudgetCard
+                    key={budget.id}
+                    budget={budget}
+                    onAdjust={handleAdjustBudget}
+                    onViewDetails={setSelectedBudget}
+                  />
+                ))}
+              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-gray-500">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={i}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className="w-8"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="space-y-3">
-              {budgetProgress.map((budget, i) => (
-                <motion.div
-                  key={budget.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="bg-white p-4 rounded-xl border flex items-center gap-4"
-                >
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${budget.color}20` }}
+            <>
+              <div className="space-y-3">
+                {paginatedBudgets.map((budget) => (
+                  <motion.div
+                    key={budget.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-white p-4 rounded-xl border flex items-center gap-4"
                   >
-                    {budget.icon && <budget.icon className="w-5 h-5" style={{ color: budget.color }} />}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold">{budget.category}</h3>
-                      <Badge className={getStatusColor(budget.status)}>
-                        {budget.status.replace('_', ' ')}
-                      </Badge>
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${budget.color}20` }}
+                    >
+                      {budget.icon && <budget.icon className="w-5 h-5" style={{ color: budget.color }} />}
                     </div>
                     
-                    <div className="grid grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-500">Budget</p>
-                        <p className="font-medium">${budget.budgetedAmount.toLocaleString()}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold">{budget.category}</h3>
+                        <Badge className={getStatusColor(budget.status)}>
+                          {budget.status.replace('_', ' ')}
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="text-gray-500">Spent</p>
-                        <p className="font-medium text-orange-600">${budget.spent.toLocaleString()}</p>
+                      
+                      <div className="grid grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500">Budget</p>
+                          <p className="font-medium">{budget.budgetedAmount.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Spent</p>
+                          <p className="font-medium text-orange-600">{budget.spent.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Left</p>
+                          <p className={`font-medium ${budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {Math.abs(budget.remaining).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Health</p>
+                          <p className={`font-medium ${budget.healthScore >= 80 ? 'text-green-600' : budget.healthScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {budget.healthScore}%
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-gray-500">Left</p>
-                        <p className={`font-medium ${budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ${Math.abs(budget.remaining).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Health</p>
-                        <p className={`font-medium ${budget.healthScore >= 80 ? 'text-green-600' : budget.healthScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {budget.healthScore}%
-                        </p>
-                      </div>
+                      
+                      <Progress 
+                        value={Math.min(budget.percentageUsed, 100)} 
+                        className={`h-1.5 mt-2 ${
+                          budget.status === 'exceeded' ? 'bg-red-200' :
+                          budget.status === 'warning' ? 'bg-orange-200' :
+                          budget.status === 'under_utilized' ? 'bg-blue-200' :
+                          'bg-green-200'
+                        }`}
+                      />
                     </div>
                     
-                    <Progress 
-                      value={Math.min(budget.percentageUsed, 100)} 
-                      className={`h-1.5 mt-2 ${
-                        budget.status === 'exceeded' ? 'bg-red-200' :
-                        budget.status === 'warning' ? 'bg-orange-200' :
-                        budget.status === 'under_utilized' ? 'bg-blue-200' :
-                        'bg-green-200'
-                      }`}
-                    />
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleAdjustBudget(budget.id, budget.percentage)}
+                      >
+                        Adjust
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteBudget(budget.id)}
+                        className="text-red-600"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              
+              {/* Pagination for list view */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-gray-500">
+                    Page {currentPage} of {totalPages}
                   </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleAdjustBudget(budget.id, budget.percentage)}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
                     >
-                      Adjust
+                      Previous
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <span className="text-sm px-3 py-1 rounded-md bg-gray-100">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteBudget(budget.id)}
-                      className="text-red-600"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
                     >
-                      Delete
+                      Next
                     </Button>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 
+        {/* Keep all other TabsContent exactly as they were */}
         <TabsContent value="budgets">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Allocation chart */}
@@ -1864,7 +2387,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                             <span>{item.name}</span>
                           </div>
                           <div className="flex gap-4">
-                            <span className="text-gray-500">${item.amount.toLocaleString()}</span>
+                            <span className="text-gray-500">{item.amount.toLocaleString()}</span>
                             <span className="font-medium w-12 text-right">{item.value}%</span>
                           </div>
                         </div>
@@ -1875,7 +2398,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                       <div className="flex justify-between font-medium pt-2">
                         <span>Total</span>
                         <div className="flex gap-4">
-                          <span>${monthlyIncome.toLocaleString()}</span>
+                          <span>{monthlyIncome.toLocaleString()}</span>
                           <span className="w-12 text-right">{totalPct}%</span>
                         </div>
                       </div>
@@ -1884,7 +2407,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                         <div className="flex justify-between text-sm text-orange-600">
                           <span>Unallocated</span>
                           <div className="flex gap-4">
-                            <span>${((100 - totalPct) / 100 * monthlyIncome).toLocaleString()}</span>
+                            <span>{((100 - totalPct) / 100 * monthlyIncome).toLocaleString()}</span>
                             <span className="w-12 text-right">{100 - totalPct}%</span>
                           </div>
                         </div>
@@ -2044,53 +2567,61 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
 
         <TabsContent value="insights">
           <div className="grid gap-4">
-            {insights.map((insight, i) => (
-              <motion.div
-                key={insight.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Alert className={`border-l-4 ${
-                  insight.type === 'warning' ? 'border-l-red-500' :
-                  insight.type === 'opportunity' ? 'border-l-green-500' :
-                  insight.type === 'achievement' ? 'border-l-yellow-500' :
-                  'border-l-blue-500'
-                }`}>
-                  <div className="flex items-start gap-3">
-                    {insight.type === 'warning' && <AlertCircle className="w-5 h-5 text-red-500" />}
-                    {insight.type === 'opportunity' && <TrendingUp className="w-5 h-5 text-green-500" />}
-                    {insight.type === 'achievement' && <Award className="w-5 h-5 text-yellow-500" />}
-                    {insight.type === 'suggestion' && <Sparkles className="w-5 h-5 text-purple-500" />}
-                    {insight.type === 'tip' && <Brain className="w-5 h-5 text-blue-500" />}
-                    
-                    <div className="flex-1">
-                      <AlertTitle>{insight.title}</AlertTitle>
-                      <AlertDescription>{insight.description}</AlertDescription>
+            {insights.length === 0 ? (
+              <div className="text-center py-12">
+                <Brain className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-gray-500">No new insights</p>
+                <p className="text-sm text-gray-400">Check back later</p>
+              </div>
+            ) : (
+              insights.map((insight, i) => (
+                <motion.div
+                  key={insight.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <Alert className={`border-l-4 ${
+                    insight.type === 'warning' ? 'border-l-red-500' :
+                    insight.type === 'opportunity' ? 'border-l-green-500' :
+                    insight.type === 'achievement' ? 'border-l-yellow-500' :
+                    'border-l-blue-500'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      {insight.type === 'warning' && <AlertCircle className="w-5 h-5 text-red-500" />}
+                      {insight.type === 'opportunity' && <TrendingUp className="w-5 h-5 text-green-500" />}
+                      {insight.type === 'achievement' && <Award className="w-5 h-5 text-yellow-500" />}
+                      {insight.type === 'suggestion' && <Sparkles className="w-5 h-5 text-purple-500" />}
+                      {insight.type === 'tip' && <Brain className="w-5 h-5 text-blue-500" />}
                       
-                      {insight.action && (
-                        <div className="mt-3 flex gap-2">
-                          <Button size="sm" onClick={() => handleInsightAction(insight)}>
-                            {insight.action.description}
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDismissInsight(insight.id)}>
-                            Dismiss
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex-1">
+                        <AlertTitle>{insight.title}</AlertTitle>
+                        <AlertDescription>{insight.description}</AlertDescription>
+                        
+                        {insight.action && (
+                          <div className="mt-3 flex gap-2">
+                            <Button size="sm" onClick={() => handleInsightAction(insight)}>
+                              {insight.action.description}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleDismissInsight(insight.id)}>
+                              Dismiss
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Badge className={
+                        insight.priority === 'high' ? 'bg-red-100 text-red-700' :
+                        insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
+                      }>
+                        {insight.priority}
+                      </Badge>
                     </div>
-                    
-                    <Badge className={
-                      insight.priority === 'high' ? 'bg-red-100 text-red-700' :
-                      insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-blue-100 text-blue-700'
-                    }>
-                      {insight.priority}
-                    </Badge>
-                  </div>
-                </Alert>
-              </motion.div>
-            ))}
+                  </Alert>
+                </motion.div>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>
@@ -2102,7 +2633,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
         onDismiss={handleDismissInsight}
       />
 
-      {/* Budget details modal */}
+      {/* Budget details modal (keep existing) */}
       <AnimatePresence>
         {selectedBudget && (
           <motion.div
@@ -2130,16 +2661,16 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Budgeted</p>
-                  <p className="text-xl font-bold">${selectedBudget.budgetedAmount.toLocaleString()}</p>
+                  <p className="text-xl font-bold">{selectedBudget.budgetedAmount.toLocaleString()}</p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Spent</p>
-                  <p className="text-xl font-bold text-orange-600">${selectedBudget.spent.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-orange-600">{selectedBudget.spent.toLocaleString()}</p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500">Remaining</p>
                   <p className={`text-xl font-bold ${selectedBudget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${Math.abs(selectedBudget.remaining).toLocaleString()}
+                    {Math.abs(selectedBudget.remaining).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -2157,12 +2688,12 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500">Daily Average</p>
-                  <p className="text-lg font-semibold">${selectedBudget.dailyAverage.toFixed(2)}</p>
+                  <p className="text-lg font-semibold">{selectedBudget.dailyAverage.toFixed(2)}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500">Projected</p>
                   <p className={`text-lg font-semibold ${selectedBudget.projectedSpend > selectedBudget.budgetedAmount ? 'text-red-600' : 'text-green-600'}`}>
-                    ${selectedBudget.projectedSpend.toLocaleString()}
+                    {selectedBudget.projectedSpend.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -2179,7 +2710,7 @@ const handlePurchaseCheck = async (data: { amount: number }) => {
                           {new Date(tx.transactionDate).toLocaleDateString()}
                         </p>
                       </div>
-                      <p className="font-semibold">${tx.amount.toLocaleString()}</p>
+                      <p className="font-semibold">{tx.amount.toLocaleString()}</p>
                     </div>
                   ))
                 ) : (

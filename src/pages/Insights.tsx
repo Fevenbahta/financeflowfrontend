@@ -26,9 +26,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AIAnalysis {
   insight: string;
@@ -84,32 +83,20 @@ const Insights = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchInsights = async () => {
-    setLoading(true);
-    try {
-      const res = await aiApi.analyze();
-      // Transform the API response to match AIAnalysis interface
-      const transformedAnalysis: AIAnalysis = {
-        insight: res.insight,
-        spendingAnalysis: [],
-        anomalies: [],
-        budgetHealth: [],
-        savingsOpportunities: [],
-        cashFlowForecast: {
-          projectedBalance: 0,
-          daysUntilZero: null,
-          riskLevel: 'low',
-          recommendations: []
-        }
-      };
-      setAnalysis(transformedAnalysis);
-    } catch (err: any) {
-      toast.error(err.message || "Could not fetch AI insights");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+const fetchInsights = async () => {
+  setLoading(true);
+  try {
+    const data = await aiApi.analyze();
+       
+    setAnalysis(data);
+  } catch (err: any) {
+    console.error('❌ Fetch error:', err);
+    toast.error(err.message || "Could not fetch AI insights");
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -287,7 +274,7 @@ const Insights = () => {
               </TabsList>
 
               <AnimatePresence mode="wait">
-                {/* Overview Tab - Added unique key */}
+                {/* Overview Tab */}
                 {activeTab === "overview" && (
                   <motion.div
                     key="overview-tab"
@@ -439,7 +426,7 @@ const Insights = () => {
                   </motion.div>
                 )}
 
-                {/* Spending Tab - Added unique key */}
+                {/* Spending Tab */}
                 {activeTab === "spending" && (
                   <motion.div
                     key="spending-tab"
@@ -485,7 +472,7 @@ const Insights = () => {
                   </motion.div>
                 )}
 
-                {/* Anomalies Tab - Added unique key */}
+                {/* Anomalies Tab */}
                 {activeTab === "anomalies" && (
                   <motion.div
                     key="anomalies-tab"
@@ -539,7 +526,7 @@ const Insights = () => {
                   </motion.div>
                 )}
 
-                {/* Opportunities Tab - Added unique key */}
+                {/* Opportunities Tab */}
                 {activeTab === "opportunities" && (
                   <motion.div
                     key="opportunities-tab"
@@ -595,7 +582,7 @@ const Insights = () => {
               </AnimatePresence>
             </Tabs>
 
-            {/* Financial Tips Section - Always visible */}
+            {/* Financial Tips Section - Fixed */}
             <div className="mt-8 pt-6 border-t border-border/50">
               <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
@@ -607,19 +594,22 @@ const Insights = () => {
                     icon: <Target className="w-5 h-5" />, 
                     title: "50/30/20 Rule", 
                     desc: "50% needs, 30% wants, 20% savings",
-                    color: "text-blue-500"
+                    bgColor: "bg-blue-500/10",
+                    textColor: "text-blue-500"
                   },
                   { 
                     icon: <Shield className="w-5 h-5" />, 
                     title: "Emergency Fund", 
                     desc: "Aim for 6 months of expenses",
-                    color: "text-green-500"
+                    bgColor: "bg-green-500/10",
+                    textColor: "text-green-500"
                   },
                   { 
                     icon: <TrendingUp className="w-5 h-5" />, 
                     title: "Invest Early", 
                     desc: "Compound interest is powerful",
-                    color: "text-purple-500"
+                    bgColor: "bg-purple-500/10",
+                    textColor: "text-purple-500"
                   },
                 ].map((tip, i) => (
                   <motion.div
@@ -629,8 +619,8 @@ const Insights = () => {
                     transition={{ delay: 0.3 + i * 0.1 }}
                     className="glass-panel p-4 space-y-2 hover:bg-background/80 transition-all hover:scale-105 cursor-pointer group"
                   >
-                    <div className={`w-8 h-8 rounded-lg bg-${tip.color}/10 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <div className={tip.color}>{tip.icon}</div>
+                    <div className={`w-8 h-8 rounded-lg ${tip.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <div className={tip.textColor}>{tip.icon}</div>
                     </div>
                     <h4 className="font-semibold text-sm text-foreground">{tip.title}</h4>
                     <p className="text-xs text-muted-foreground">{tip.desc}</p>

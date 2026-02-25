@@ -56,7 +56,8 @@ export const useUserStore = create<UserState>((set, get) => ({
 /////////////////////
 // Request Helper
 /////////////////////
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
 
 function authHeaders(): HeadersInit {
   const token = useUserStore.getState().getToken();
@@ -209,17 +210,16 @@ export const notificationsApi = {
 };
 
 // api.ts - Update to return full analysis
-export const aiApi = {
-  analyze: () => {
-    const userId = useUserStore.getState().getUserId();
-    if (!userId) throw new Error("User not logged in");
-    // Change the return type to AIAnalysis
-    return request<AIAnalysis>(`/ai/analyze?userId=${userId}`);
-  },
-};
+// src/services/api.ts
 
-// You'll also need to define the AIAnalysis type here or import it
-interface AIAnalysis {
+// ... (keep all your existing code above, including the store and other APIs)
+
+/////////////////////
+// AI API
+/////////////////////
+
+// Define the AIAnalysis interface with proper types
+export interface AIAnalysis {
   insight: string;
   spendingAnalysis: Array<{
     category: string;
@@ -255,3 +255,12 @@ interface AIAnalysis {
     recommendations: string[];
   };
 }
+
+export const aiApi = {
+  analyze: () => {
+    const userId = useUserStore.getState().getUserId();
+    if (!userId) throw new Error("User not logged in");
+    // Now expecting the full AIAnalysis type
+    return request<AIAnalysis>(`/ai/analyze?userId=${userId}`);
+  },
+};
