@@ -442,19 +442,17 @@ interface AIInsight {
   read: boolean;
 }
 
+// Update the PurchaseCheck interface to match your API
 interface PurchaseCheck {
-  advice?: string;
-  canAfford: boolean;
-  disposableIncome?: number;
-  impact?: string;
-  suggestions?: Array<{
-    category: string;
-    currentPercentage: number;
-    priority: 'HIGH' | 'MEDIUM' | 'LOW';
-    reasoning: string;
-    recommendedPercentage: number;
-    suggestedAmount: number;
-  }>;
+  allowed: boolean;
+  impact: {
+    willExceed: boolean;
+    newPercentage: number;
+    daysRemaining: number;
+    recommendedAmount: number;
+  };
+  remainingBudget: number;
+  suggestions: string[];  // Array of strings, not objects
 }
 
 /////////////////////
@@ -956,6 +954,9 @@ const SmartBudgetCard = ({
 /////////////////////
 // Purchase Checker Component
 /////////////////////
+
+
+// Update the component
 const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -982,20 +983,6 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
     setLoading(false);
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'HIGH': return 'text-red-600 bg-red-50 border-red-200';
-      case 'MEDIUM': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'LOW': return 'text-green-600 bg-green-50 border-green-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getPercentageOfIncome = () => {
-    if (!result || !result.disposableIncome) return null;
-    return ((Number(amount) / result.disposableIncome) * 100).toFixed(1);
-  };
-
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -1004,7 +991,7 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
           Smart Purchase Checker
         </CardTitle>
         <CardDescription>
-          Check if you can afford a purchase based on your disposable income
+          Check if you can afford a purchase based on your remaining budget
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -1034,12 +1021,12 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
             >
               {/* Main result card */}
               <div className={`p-4 rounded-xl border ${
-                result.canAfford 
+                result.allowed 
                   ? 'bg-green-50 border-green-200' 
                   : 'bg-red-50 border-red-200'
               }`}>
                 <div className="flex items-start gap-3">
-                  {result.canAfford ? (
+                  {result.allowed ? (
                     <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                   ) : (
                     <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
@@ -1048,98 +1035,67 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
                   <div className="flex-1 space-y-3">
                     {/* Main advice */}
                     <div>
-                      <h4 className={`font-semibold text-lg ${result.canAfford ? 'text-green-700' : 'text-red-700'}`}>
-                        {result.canAfford ? '✓ You can afford this!' : '✗ Think twice about this purchase'}
+                      <h4 className={`font-semibold text-lg ${result.allowed ? 'text-green-700' : 'text-red-700'}`}>
+                        {result.allowed ? '✓ You can afford this!' : '✗ Think twice about this purchase'}
                       </h4>
-                      {result.advice && (
-                        <p className="text-sm text-gray-600 mt-1">{result.advice}</p>
-                      )}
                     </div>
 
                     {/* Financial metrics */}
                     <div className="grid grid-cols-2 gap-3">
-                      {result.disposableIncome && (
-                        <div className="bg-white p-3 rounded-lg">
-                          <p className="text-gray-500 text-xs flex items-center gap-1">
-                            <Wallet className="w-3 h-3" />
-                            Disposable Income
-                          </p>
-                          <p className="text-xl font-bold text-gray-900">
-                            {result.disposableIncome.toLocaleString()}
-                          </p>
-                        </div>
-                      )}
+                      <div className="bg-white p-3 rounded-lg">
+                        <p className="text-gray-500 text-xs flex items-center gap-1">
+                          <Wallet className="w-3 h-3" />
+                          Remaining Budget
+                        </p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {result.remainingBudget?.toLocaleString()}
+                        </p>
+                      </div>
                       
-                      {Number(amount) > 0 && result.disposableIncome && (
+                      {result.impact && (
                         <div className="bg-white p-3 rounded-lg">
                           <p className="text-gray-500 text-xs flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
-                            % of Income
+                            Impact
                           </p>
                           <p className="text-xl font-bold text-gray-900">
-                            {getPercentageOfIncome()}%
+                            {result.impact.newPercentage?.toFixed(1)}%
                           </p>
-                          {result.impact && (
-                            <p className="text-xs text-gray-500 mt-1">{result.impact}</p>
+                          {result.impact.willExceed && (
+                            <p className="text-xs text-red-500 mt-1">Will exceed budget</p>
                           )}
                         </div>
                       )}
                     </div>
 
-                    {/* AI Suggestions */}
+                    {/* Additional impact info */}
+                    {result.impact && (
+                      <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-2 rounded">
+                        <div>
+                          <span className="text-gray-500">Days remaining:</span>
+                          <span className="ml-1 font-medium">{result.impact.daysRemaining}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Recommended max:</span>
+                          <span className="ml-1 font-medium">{result.impact.recommendedAmount?.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* String suggestions - FIXED: Now handling array of strings */}
                     {result.suggestions && result.suggestions.length > 0 && (
                       <div className="mt-4">
                         <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
                           <Brain className="w-4 h-4" />
-                          AI Insights to Improve Your Finances
+                          AI Insights
                         </p>
                         <div className="space-y-2">
                           {result.suggestions.map((suggestion, index) => (
                             <div 
                               key={index}
-                              className={`p-3 rounded-lg border ${getPriorityColor(suggestion.priority)}`}
+                              className="p-2 bg-blue-50 border border-blue-100 rounded-lg text-sm text-gray-700"
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span className="font-semibold text-sm">{suggestion.category}</span>
-                                    <Badge variant="outline" className={`text-xs ${
-                                      suggestion.priority === 'HIGH' ? 'border-red-200 text-red-700' :
-                                      suggestion.priority === 'MEDIUM' ? 'border-yellow-200 text-yellow-700' :
-                                      'border-green-200 text-green-700'
-                                    }`}>
-                                      {suggestion.priority} Priority
-                                    </Badge>
-                                  </div>
-                                  
-                                  <p className="text-sm text-gray-700 mb-2">
-                                    {suggestion.reasoning}
-                                  </p>
-                                  
-                                  <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-2 rounded">
-                                    <div>
-                                      <span className="text-gray-500">Current allocation:</span>
-                                      <span className="ml-1 font-medium">
-                                        {suggestion.currentPercentage}%
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Recommended:</span>
-                                      <span className="ml-1 font-medium text-green-600">
-                                        {suggestion.recommendedPercentage}%
-                                      </span>
-                                    </div>
-                                    {suggestion.suggestedAmount > 0 && (
-                                      <div className="col-span-2">
-                                        <span className="text-gray-500">Suggested monthly amount:</span>
-                                        <span className="ml-1 font-medium">
-                                          {suggestion.suggestedAmount.toLocaleString()}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
+                              • {suggestion}
                             </div>
                           ))}
                         </div>
@@ -1152,7 +1108,7 @@ const PurchaseChecker = ({ onCheck }: { onCheck: (data: any) => Promise<any> }) 
               {/* Quick tip */}
               <div className="mt-3 text-xs text-gray-500 flex items-center gap-1 justify-center">
                 <Sparkles className="w-3 h-3" />
-                <span>Based on your monthly disposable income of {result.disposableIncome?.toLocaleString()}</span>
+                <span>Based on your remaining budget of ${result.remainingBudget?.toLocaleString()}</span>
               </div>
             </motion.div>
           )}
