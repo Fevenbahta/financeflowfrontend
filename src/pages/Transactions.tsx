@@ -14,12 +14,20 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { 
-  Plus, Trash2, ArrowUpRight, ArrowDownRight, 
-  Calendar, ChevronDown, ChevronUp, Eye,
-  Home, ShoppingBag, Coffee, Car, Film,
-  Briefcase, Code, TrendingUp, PiggyBank, MoreHorizontal,
-  CreditCard, Wallet, CalendarDays, Search, X,
-  Filter, Download, RefreshCw, AlertCircle, ChevronLeft, ChevronRight
+  Trash2, ArrowUpRight, ArrowDownRight, 
+  ChevronDown, ChevronUp, Eye, CalendarDays, 
+} from "lucide-react";
+import { 
+  Plus, PieChart, Sparkles, TrendingUp, TrendingDown, 
+  AlertCircle, Award, Wallet, Calendar, ArrowRightLeft,
+  Brain, Target, Bell, Shield, Zap, BarChart3,
+  Clock, CheckCircle2, XCircle, HelpCircle, Lock,
+  Gift, CreditCard, Home, ShoppingBag, Coffee, Car,
+  Film, Briefcase, Code, PiggyBank, MoreHorizontal,
+  Moon, Sun, Download, Upload, Repeat, ArrowLeftRight,
+  LineChart, Settings, Share2, Star, Flag,
+  Smile, Frown, Meh, ThumbsUp, ThumbsDown, Search, X,
+  Filter, RefreshCw, ChevronLeft, ChevronRight, SlidersHorizontal
 } from "lucide-react";
 
 // Elegant Color Palette
@@ -29,6 +37,30 @@ const COLORS = {
   accentWarmGold: "#C5904A",    // Warm Gold
   softAccent: "#C39D8A",        // Dusty Rose
   neutralOlive: "#89836D",      // Olive Grey
+  primary: {
+    dark: "#1A1F2C",
+    brown: "#6E3F25",
+    beige: "#C9A87B",
+    gold: "#C5904A",
+    rose: "#C39D8A",
+    olive: "#89836D",
+    cream: "#F5E6D3",
+    charcoal: "#2C3E50"
+  },
+  accent: {
+    success: "#10B981",
+    warning: "#F59E0B",
+    danger: "#EF4444",
+    info: "#3B82F6",
+    purple: "#8B5CF6",
+    pink: "#EC4899"
+  },
+  gradients: {
+    sunset: "linear-gradient(135deg, #C5904A 0%, #C39D8A 100%)",
+    ocean: "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
+    forest: "linear-gradient(135deg, #10B981 0%, #6E3F25 100%)",
+    rose: "linear-gradient(135deg, #EC4899 0%, #C39D8A 100%)"
+  }
 };
 
 /////////////////////
@@ -55,28 +87,46 @@ interface Transaction {
 
 // Categories with Icons & Colors
 const CATEGORIES = [
+  // ========================
   // Expense Categories
+  // ========================
   { name: "Rent", icon: Home, color: COLORS.primaryDark, type: "expense" },
   { name: "Grocery", icon: ShoppingBag, color: COLORS.accentWarmGold, type: "expense" },
   { name: "Dining", icon: Coffee, color: COLORS.softAccent, type: "expense" },
   { name: "Transport", icon: Car, color: COLORS.neutralOlive, type: "expense" },
   { name: "Entertainment", icon: Film, color: COLORS.secondaryBeige, type: "expense" },
-  { name: "Utilities", icon: Home, color: COLORS.primaryDark, type: "expense" },
-  { name: "Shopping", icon: ShoppingBag, color: COLORS.accentWarmGold, type: "expense" },
-  { name: "Healthcare", icon: MoreHorizontal, color: COLORS.softAccent, type: "expense" },
+  { name: "Utilities", icon: Zap, color: COLORS.accent.warning, type: "expense" },
+  { name: "Healthcare", icon: Shield, color: COLORS.accent.danger, type: "expense" },
+  { name: "Shopping", icon: ShoppingBag, color: COLORS.softAccent, type: "expense" },
   { name: "Education", icon: MoreHorizontal, color: COLORS.neutralOlive, type: "expense" },
-  
+  { name: "Insurance", icon: Shield, color: COLORS.primaryDark, type: "expense" },
+  { name: "Subscriptions", icon: Film, color: COLORS.neutralOlive, type: "expense" },
+
+  // ========================
   // Income Categories
+  // ========================
   { name: "Salary", icon: Briefcase, color: COLORS.accentWarmGold, type: "income" },
   { name: "Freelance", icon: Code, color: COLORS.primaryDark, type: "income" },
   { name: "Investment", icon: TrendingUp, color: COLORS.neutralOlive, type: "income" },
-  { name: "Savings", icon: PiggyBank, color: COLORS.softAccent, type: "income" },
-  { name: "Business", icon: Briefcase, color: COLORS.accentWarmGold, type: "income" },
+  { name: "Business", icon: Briefcase, color: COLORS.accent.warning, type: "income" },
   { name: "Rental Income", icon: Home, color: COLORS.primaryDark, type: "income" },
-  { name: "Dividends", icon: TrendingUp, color: COLORS.neutralOlive, type: "income" },
-  { name: "Gift", icon: MoreHorizontal, color: COLORS.softAccent, type: "income" },
-  
+  { name: "Dividends", icon: TrendingUp, color: COLORS.accentWarmGold, type: "income" },
+  { name: "Interest", icon: TrendingUp, color: COLORS.neutralOlive, type: "income" },
+  { name: "Bonus", icon: Award, color: COLORS.softAccent, type: "income" },
+  { name: "Gift", icon: Gift, color: COLORS.accent.warning, type: "income" },
+  { name: "Refund", icon: ArrowLeftRight, color: COLORS.neutralOlive, type: "income" },
+
+  // ========================
+  // Transfers
+  // ========================
+  { name: "Savings", icon: PiggyBank, color: COLORS.softAccent, type: "transfer" },
+  { name: "Emergency Fund", icon: Shield, color: COLORS.accentWarmGold, type: "transfer" },
+  { name: "Retirement", icon: PiggyBank, color: COLORS.primaryDark, type: "transfer" },
+  { name: "Investment Transfer", icon: TrendingUp, color: COLORS.neutralOlive, type: "transfer" },
+
+  // ========================
   // Other
+  // ========================
   { name: "Other", icon: MoreHorizontal, color: COLORS.secondaryBeige, type: "both" },
 ];
 

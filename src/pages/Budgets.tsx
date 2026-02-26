@@ -201,39 +201,6 @@ const CATEGORIES = [
     description: "Streaming, apps, memberships",
     type: "expense"
   },
-  { 
-    id: "fitness", 
-    name: "Fitness", 
-    icon: MoreHorizontal, 
-    color: COLORS.accent.success,
-    lightColor: "#10B98120",
-    avgPercentage: 3,
-    essential: false,
-    description: "Gym, fitness classes, sports",
-    type: "expense"
-  },
-  { 
-    id: "pet", 
-    name: "Pet Care", 
-    icon: MoreHorizontal, 
-    color: COLORS.accent.purple,
-    lightColor: "#8B5CF620",
-    avgPercentage: 2,
-    essential: false,
-    description: "Pet food, vet, supplies",
-    type: "expense"
-  },
-  { 
-    id: "gifts", 
-    name: "Gifts", 
-    icon: Gift, 
-    color: COLORS.accent.pink,
-    lightColor: "#EC489920",
-    avgPercentage: 2,
-    essential: false,
-    description: "Birthday, holiday, special occasions",
-    type: "expense"
-  },
 
   // Income Categories
   { 

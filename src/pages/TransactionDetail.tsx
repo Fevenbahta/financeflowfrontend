@@ -17,7 +17,19 @@ import {
   ArrowUpRight, ArrowDownRight, Calendar, 
   Home, ShoppingBag, Coffee, Car, Film,
   Briefcase, Code, TrendingUp, PiggyBank, MoreHorizontal,
-  CreditCard, ArrowLeft, Edit, Download, Share2, Save, X
+  CreditCard, ArrowLeft, Edit, Download, Share2, Save,
+  Gift
+} from "lucide-react";
+
+import { 
+  Plus, PieChart, Sparkles, TrendingDown, 
+  AlertCircle, Award, Wallet,  ArrowRightLeft,
+  Brain, Target, Bell, Shield, Zap, BarChart3,
+  Clock, CheckCircle2, XCircle, HelpCircle, Lock,
+  Moon, Sun, Upload, Repeat, ArrowLeftRight,
+  LineChart, Settings, Star, Flag,
+  Smile, Frown, Meh, ThumbsUp, ThumbsDown, Search, X,
+  Filter, RefreshCw, ChevronLeft, ChevronRight, SlidersHorizontal
 } from "lucide-react";
 
 // Elegant Color Palette
@@ -27,6 +39,30 @@ const COLORS = {
   accentWarmGold: "#C5904A",    // Warm Gold
   softAccent: "#C39D8A",        // Dusty Rose
   neutralOlive: "#89836D",      // Olive Grey
+  primary: {
+    dark: "#1A1F2C",
+    brown: "#6E3F25",
+    beige: "#C9A87B",
+    gold: "#C5904A",
+    rose: "#C39D8A",
+    olive: "#89836D",
+    cream: "#F5E6D3",
+    charcoal: "#2C3E50"
+  },
+  accent: {
+    success: "#10B981",
+    warning: "#F59E0B",
+    danger: "#EF4444",
+    info: "#3B82F6",
+    purple: "#8B5CF6",
+    pink: "#EC4899"
+  },
+  gradients: {
+    sunset: "linear-gradient(135deg, #C5904A 0%, #C39D8A 100%)",
+    ocean: "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
+    forest: "linear-gradient(135deg, #10B981 0%, #6E3F25 100%)",
+    rose: "linear-gradient(135deg, #EC4899 0%, #C39D8A 100%)"
+  }
 };
 
 /////////////////////
@@ -60,10 +96,33 @@ const CATEGORIES = [
   { name: "Dining", icon: Coffee, color: COLORS.softAccent },
   { name: "Transport", icon: Car, color: COLORS.neutralOlive },
   { name: "Entertainment", icon: Film, color: COLORS.secondaryBeige },
+
+  // ✅ Added missing Expense Categories
+  { name: "Utilities", icon: Zap, color: COLORS.accent.warning },
+  { name: "Healthcare", icon: Shield, color: COLORS.accent.danger },
+  { name: "Shopping", icon: ShoppingBag, color: COLORS.softAccent },
+  { name: "Education", icon: MoreHorizontal, color: COLORS.neutralOlive },
+  { name: "Insurance", icon: Shield, color: COLORS.primaryDark },
+  { name: "Subscriptions", icon: Film, color: COLORS.neutralOlive },
+
+  // Income
   { name: "Salary", icon: Briefcase, color: COLORS.accentWarmGold },
   { name: "Freelance", icon: Code, color: COLORS.primaryDark },
   { name: "Investment", icon: TrendingUp, color: COLORS.neutralOlive },
+  { name: "Business", icon: Briefcase, color: COLORS.accent.warning },
+  { name: "Rental Income", icon: Home, color: COLORS.primaryDark },
+  { name: "Dividends", icon: TrendingUp, color: COLORS.accentWarmGold },
+  { name: "Interest", icon: TrendingUp, color: COLORS.neutralOlive },
+  { name: "Bonus", icon: Award, color: COLORS.softAccent },
+  { name: "Gift", icon: Gift, color: COLORS.accent.warning },
+  { name: "Refund", icon: ArrowLeftRight, color: COLORS.neutralOlive },
+
+  // Transfers
   { name: "Savings", icon: PiggyBank, color: COLORS.softAccent },
+  { name: "Emergency Fund", icon: Shield, color: COLORS.accentWarmGold },
+  { name: "Retirement", icon: PiggyBank, color: COLORS.primaryDark },
+  { name: "Investment Transfer", icon: TrendingUp, color: COLORS.neutralOlive },
+
   { name: "Other", icon: MoreHorizontal, color: COLORS.secondaryBeige },
 ];
 
@@ -364,7 +423,7 @@ const TransactionDetail = () => {
                         <SelectContent>
                           {accounts.map((a) => (
                             <SelectItem key={a.id} value={a.id}>
-                              {a.name} ({a.type}) - ${a.balance}
+                              {a.name} ({a.type}) - {a.balance}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -402,7 +461,7 @@ const TransactionDetail = () => {
                   >
                     <p className="text-sm mb-2" style={{ color: COLORS.neutralOlive }}>Amount</p>
                     <p className={`text-5xl font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                      {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toLocaleString()}
                     </p>
                   </div>
 
@@ -441,7 +500,7 @@ const TransactionDetail = () => {
                         <div>
                           <p className="text-sm" style={{ color: COLORS.neutralOlive }}>Account</p>
                           <p className="text-lg font-medium" style={{ color: COLORS.primaryDark }}>{account.name}</p>
-                          <p className="text-sm" style={{ color: COLORS.neutralOlive }}>{account.type} • Balance: ${account.balance.toLocaleString()}</p>
+                          <p className="text-sm" style={{ color: COLORS.neutralOlive }}>{account.type} • Balance: {account.balance.toLocaleString()}</p>
                         </div>
                       </div>
                     )}
